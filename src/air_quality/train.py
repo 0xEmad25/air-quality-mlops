@@ -9,10 +9,11 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer 
 from sklearn.ensemble import RandomForestClassifier 
 from sklearn.impute import SimpleImputer 
-from sklearn.linear_model import LogisticRegression 
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, recall_score, roc_auc_score 
 from sklearn.pipeline import Pipeline 
 from sklearn.preprocessing import StandardScaler 
+from sklearn.tree import DecisionTreeClassifier
  
 from air_quality.features import FEATURES 
  
@@ -42,6 +43,7 @@ def main() -> None:
         "random_forest": RandomForestClassifier( 
             n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 ,n_jobs=-1
         ), 
+        "decision_tree": DecisionTreeClassifier(random_state=42),
     } 
  
     mlflow.set_tracking_uri("http://localhost:4321") 
@@ -52,14 +54,14 @@ def main() -> None:
         pipeline = make_pipeline(model) 
         pipeline.fit(train[FEATURES], train["high_pollution_next_hour"]) 
         probability = pipeline.predict_proba(valid[FEATURES])[:, 1] 
-        prediction = (probability >= 0.50).astype(int) 
+        prediction = (probability >= 0.60).astype(int) 
         metrics = { 
             "validation_f1": f1_score(valid["high_pollution_next_hour"], prediction), 
             "validation_recall": recall_score(valid["high_pollution_next_hour"], prediction), 
             "validation_roc_auc": roc_auc_score(valid["high_pollution_next_hour"], probability), 
         } 
         with mlflow.start_run(run_name=name): 
-            mlflow.log_params({"model": name, "threshold": 0.50}) 
+            mlflow.log_params({"model": name, "threshold": 0.60}) 
             mlflow.log_metrics(metrics) 
             # mlflow.sklearn.log_model(pipeline, artifact_path="model") 
             mlflow.sklearn.log_model(pipeline, name="model", serialization_format="cloudpickle")
@@ -71,7 +73,7 @@ def main() -> None:
  
     assert best_pipeline is not None 
     test_probability = best_pipeline.predict_proba(test[FEATURES])[:, 1] 
-    test_prediction = (test_probability >= 0.50).astype(int) 
+    test_prediction = (test_probability >= 0.60).astype(int) 
     print({ 
         "selected_model": best_name, 
         "test_f1": f1_score(test["high_pollution_next_hour"], test_prediction), 
@@ -79,7 +81,7 @@ def main() -> None:
         "test_roc_auc": roc_auc_score(test["high_pollution_next_hour"], test_probability), 
     }) 
     Path("models").mkdir(exist_ok=True) 
-    joblib.dump({"pipeline": best_pipeline, "threshold": 0.50}, "models/model.joblib") 
+    joblib.dump({"pipeline": best_pipeline, "threshold": 0.60}, "models/model.joblib") 
     Path('data/monitoring').mkdir(parents=True, exist_ok=True)
     test[FEATURES + ["high_pollution_next_hour"]].to_csv( 
         "data/monitoring/reference.csv", index=False 

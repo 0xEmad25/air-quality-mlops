@@ -7,13 +7,17 @@ requires-python = ">=3.12,<3.14"
 dependencies = [
     "evidently>=0.7.21",
     "fastapi>=0.140.13",
+    "fg-data-profiling>=4.19.1",
+    "ipywidgets>=8.1.8",
     "joblib>=1.5.3",
     "mlflow>=3.14.0",
     "pandas>=2.3.3",
+    "pandas-profiling>=3.6.6",
     "pyarrow>=24.0.0",
     "pydantic>=2.13.4",
     "requests>=2.34.2",
     "scikit-learn>=1.9.0",
+    "setuptools<81",
     "streamlit>=1.60.0",
     "uvicorn[standard]>=0.51.0",
 ]
