@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+
+# Environment
+.env
+
+# MLflow
+mlflow.db
+mlruns/
+
+# Data (track raw data; processed/monitoring can be regenerated)
+data/processed/
+data/monitoring/
+
+# Models (track the selected artifact)
+models/
+
+# Reports
+reports/
+
+# OS
+.DS_Store
