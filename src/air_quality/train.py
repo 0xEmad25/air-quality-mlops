@@ -14,6 +14,7 @@ from sklearn.metrics import f1_score, recall_score, roc_auc_score
 from sklearn.pipeline import Pipeline 
 from sklearn.preprocessing import StandardScaler 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
  
 from air_quality.features import FEATURES 
  
@@ -41,9 +42,9 @@ def main() -> None:
     candidates = { 
         "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=-1), 
         "random_forest": RandomForestClassifier( 
-            n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 ,n_jobs=-1
-        ), 
-        "decision_tree": DecisionTreeClassifier(random_state=42),
+            n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 ,n_jobs=-1), 
+        "decision_tree": DecisionTreeClassifier(random_state=42, class_weight="balanced"),
+        "knn": KNeighborsClassifier(n_neighbors=7, weights="distance"),
     } 
  
     mlflow.set_tracking_uri("http://localhost:4321") 
