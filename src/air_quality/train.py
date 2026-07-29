@@ -38,6 +38,7 @@ def make_pipeline(model):
  
 def main() -> None: 
     df = pd.read_parquet("data/processed/model_table.parquet") 
+    df = df.drop_duplicates()
     train, valid, test = split_by_time(df) 
     candidates = { 
         "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=-1), 
