@@ -1,0 +1,3 @@
+pm2_5,pm10,temperature_2m,relative_humidity_2m,wind_speed_10m,hour,day_of_week,pm2_5_lag_1,pm2_5_lag_3,pm2_5_rolling_mean_6,probability,prediction,timestamp
+25.0,60.0,32.0,25.0,12.0,12,2,24.0,22.0,23.0,0.17658162393162394,0,2026-07-29T09:50:36.302262+00:00
+25.0,60.0,32.0,25.0,12.0,6,2,24.0,22.0,23.0,0.19258162393162392,0,2026-07-29T11:17:38.908511+00:00
