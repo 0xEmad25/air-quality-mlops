@@ -38,13 +38,13 @@ def main() -> None:
     df = pd.read_parquet("data/processed/model_table.parquet") 
     train, valid, test = split_by_time(df) 
     candidates = { 
-        "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced"), 
+        "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=-1), 
         "random_forest": RandomForestClassifier( 
-            n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 
+            n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 ,n_jobs=-1
         ), 
     } 
  
-    mlflow.set_tracking_uri("http://localhost:5000") 
+    mlflow.set_tracking_uri("http://localhost:4321") 
     mlflow.set_experiment("riyadh-air-quality") 
     best_name, best_pipeline, best_f1 = None, None, -1.0 
  
@@ -61,7 +61,10 @@ def main() -> None:
         with mlflow.start_run(run_name=name): 
             mlflow.log_params({"model": name, "threshold": 0.50}) 
             mlflow.log_metrics(metrics) 
-            mlflow.sklearn.log_model(pipeline, artifact_path="model") 
+            # mlflow.sklearn.log_model(pipeline, artifact_path="model") 
+            mlflow.sklearn.log_model(pipeline, name="model", serialization_format="cloudpickle")
+            
+
  
         if metrics["validation_f1"] > best_f1: 
             best_name, best_pipeline, best_f1 = name, pipeline, metrics["validation_f1"] 
@@ -77,6 +80,7 @@ def main() -> None:
     }) 
     Path("models").mkdir(exist_ok=True) 
     joblib.dump({"pipeline": best_pipeline, "threshold": 0.50}, "models/model.joblib") 
+    Path('data/monitoring').mkdir(parents=True, exist_ok=True)
     test[FEATURES + ["high_pollution_next_hour"]].to_csv( 
         "data/monitoring/reference.csv", index=False 
     ) 
