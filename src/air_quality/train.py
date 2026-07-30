@@ -17,6 +17,65 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
  
 from air_quality.features import FEATURES 
+
+import numpy as np
+from sklearn.model_selection import GridSearchCV, PredefinedSplit
+
+
+PARAM_GRIDS = {
+    "logistic_regression": {
+        "model__C": [0.01, 0.1, 1.0, 10.0],
+        "model__solver": ["lbfgs", "liblinear"],
+    },
+    "random_forest": {
+        "model__n_estimators": [100, 250, 500],
+        "model__max_depth": [5, 10, 20, None],
+        "model__min_samples_leaf": [1, 5, 20],
+    },
+    "decision_tree": {
+        "model__max_depth": [3, 5, 10, None],
+        "model__min_samples_leaf": [1, 10, 50],
+        "model__criterion": ["gini", "entropy"],
+    },
+    "knn": {
+        "model__n_neighbors": [3, 7, 15, 31],
+        "model__weights": ["uniform", "distance"],
+        "model__p": [1, 2],
+    },
+}
+
+
+def run_grid_search() -> None:
+    """Print the best hyperparameters per model. Does not save or log anything."""
+    df = pd.read_parquet("data/processed/model_table.parquet").drop_duplicates()
+    train, valid, _ = split_by_time(df)
+
+    search_df = pd.concat([train, valid], ignore_index=True)
+    X = search_df[FEATURES]
+    y = search_df["high_pollution_next_hour"]
+
+    # -1 -> always train, 0 -> the one validation fold. Same split as main(), no leakage.
+    fold = np.concatenate([np.full(len(train), -1), np.zeros(len(valid), dtype=int)])
+    cv = PredefinedSplit(fold)
+
+    base_models = {
+        "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced"),
+        "random_forest": RandomForestClassifier(class_weight="balanced", random_state=42),
+        "decision_tree": DecisionTreeClassifier(class_weight="balanced", random_state=42),
+        "knn": KNeighborsClassifier(),
+    }
+
+    for name, model in base_models.items():
+        search = GridSearchCV(
+            make_pipeline(model),
+            PARAM_GRIDS[name],
+            scoring="f1",
+            cv=cv,
+            n_jobs=-1,
+            refit=False,   # we only want the numbers, so skip the final refit
+        )
+        search.fit(X, y)
+        print(f"{name:20s} best_f1={search.best_score_:.4f}  {search.best_params_}")
  
  
 def split_by_time(df: pd.DataFrame): 
@@ -43,9 +102,9 @@ def main() -> None:
     candidates = { 
         "logistic_regression": LogisticRegression(max_iter=1000, class_weight="balanced", n_jobs=-1), 
         "random_forest": RandomForestClassifier( 
-            n_estimators=250, max_depth=10, class_weight="balanced", random_state=42 ,n_jobs=-1), 
+            n_estimators=250, max_depth=20, class_weight="balanced", random_state=42 ,n_jobs=-1), 
         "decision_tree": DecisionTreeClassifier(random_state=42, class_weight="balanced"),
-        "knn": KNeighborsClassifier(n_neighbors=7, weights="distance"),
+        "knn": KNeighborsClassifier(n_neighbors=31, weights="uniform"),
     } 
  
     mlflow.set_tracking_uri("http://localhost:4321") 
@@ -91,4 +150,5 @@ def main() -> None:
  
  
 if __name__ == "__main__": 
+    run_grid_search()
     main()
